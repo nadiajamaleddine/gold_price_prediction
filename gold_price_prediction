@@ -1,0 +1,47 @@
+import pandas as pd
+import numpy as np
+%matplotlib inline
+import warnings
+warnings.filterwarnings('ignore')
+from sklearn.linear_model import LinearRegression
+
+data = pd.read_csv("gold_price.csv", parse_dates=True, index_col='Date')
+data.head(5)
+
+# Check the dimensions of the DataFrame
+data.shape
+
+# Display a summary of the data information
+data.info()
+
+# Create new features (analyze return in time)
+data['Return'] = data['EURO (PM)'].pct_change() * 100 
+# The first one will generally be NaN because there is no previous value to calculate the variation.
+data['Lagged_Return'] = data.Return.shift()
+#The .shift() method returns a new column with the shifted values.
+
+# Count the number of null values in each column
+data.isnull().sum()
+
+# Delete rows containing null values
+data.dropna(inplace = True)
+
+train = data['2001':'2018']
+test = data['2019']
+# Create train and test sets for dependent and independent variables
+X_train = train["Lagged_Return"].to_frame()
+y_train = train["Return"]
+X_test = test["Lagged_Return"].to_frame()
+y_test = test["Return"]
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
+
+import matplotlib.pyplot as plt
+
+results = y_test.to_frame()
+# Add a column of "out-of-sample" predictions to that dataframe:  
+results["Predictions"] = model.predict(X_test)
+results.plot(subplots=True, title='Gold prices, EURO')
+plt.show()
